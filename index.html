@@ -304,14 +304,14 @@
     <img class="brand-logo" id="brandLogoRuanglab" alt="RuangLab">
     <div class="brand-text">
       <p class="brand-addr">Maguwoharjo, Sleman, Yogyakarta</p>
-      <p class="brand-addr">Phone. 0857-4366-1020 | https://ruanglab.com</p>
+      <p class="brand-addr">Phone. 0857-4366-1020 | http://www.ruanglab.com/</p>
     </div>
     <img class="brand-mark-rmn" id="brandMarkRmn" alt="PT. Rumah Mulya Nusantara">
   </div>
 
   <div class="mode-switch">
     <button class="mode-btn active" data-mode="serah" type="button">Tanda Terima</button>
-    <button class="mode-btn" data-mode="maintenance" type="button">Inspeksi</button>
+    <button class="mode-btn" data-mode="maintenance" type="button">Inspeksi/Service Report</button>
   </div>
 
   <div class="tabs">
@@ -363,7 +363,12 @@
         </div>
         <div class="field">
           <label>Keterangan</label>
-          <textarea id="f-keterangan" placeholder="cth. alat akan dibawa untuk service"></textarea>
+          <select class="mini-input" id="f-keteranganTemplate" style="max-width:100%;margin-bottom:8px;">
+            <option value="">- pilih template -</option>
+            <option value="Alat akan dibawa ke workshop untuk diservice.">Alat Masuk — akan dibawa ke workshop untuk diservice</option>
+            <option value="Alat sudah selesai diservice.">Alat Keluar — sudah selesai diservice</option>
+          </select>
+          <textarea id="f-keterangan" placeholder="Pilih template di atas lalu edit sesuai kebutuhan, atau ketik manual"></textarea>
         </div>
         <div class="field" style="max-width:220px;">
           <label>Tanggal <span class="req">*</span></label>
@@ -422,11 +427,6 @@
             </div>
           </div>
 
-          <div class="field" id="mf-garansi-wrap" style="max-width:220px; display:none;">
-            <label>Garansi (Hari)</label>
-            <input type="text" id="mf-garansi" placeholder="cth. 30">
-          </div>
-
           <div class="serial">
             No. Dokumen
             <input type="text" id="mf-noDokumen" />
@@ -469,26 +469,26 @@
           <div class="row">
             <div class="field">
               <label>Nama Ruang</label>
-              <input type="text" id="mf-namaRuang">
+              <input type="text" id="mf-namaRuang" value="Lab Teknisi">
             </div>
             <div class="field">
               <label>Temperature (˚C)</label>
-              <input type="text" id="mf-temperature" placeholder="cth. 24">
+              <input type="text" id="mf-temperature" placeholder="cth. 24" value="26">
             </div>
           </div>
           <div class="row">
             <div class="field">
               <label>Kelembaban (%RH)</label>
-              <input type="text" id="mf-kelembaban" placeholder="cth. 55">
+              <input type="text" id="mf-kelembaban" placeholder="cth. 55" value="55">
             </div>
             <div class="field">
               <label>Power Phase (phase)</label>
-              <input type="text" id="mf-powerPhase" placeholder="cth. 1 phase">
+              <input type="text" id="mf-powerPhase" placeholder="cth. 1 phase" value="1">
             </div>
           </div>
           <div class="field" style="max-width:220px;">
             <label>Tegangan (V)</label>
-            <input type="text" id="mf-tegangan" placeholder="cth. 220">
+            <input type="text" id="mf-tegangan" placeholder="cth. 220" value="220">
           </div>
 
           <h2 class="section-title">Kendala</h2>
@@ -552,19 +552,19 @@
 
           <h2 class="section-title">Catatan</h2>
           <div class="field">
-            <textarea id="mf-catatan" placeholder="Catatan tambahan (opsional)"></textarea>
-          </div>
-
-          <h2 class="section-title">Catatan Alat</h2>
-          <div class="field">
             <label>Template cepat (opsional)</label>
-            <select class="mini-input" id="mf-catatanAlatTemplate" style="max-width:100%;margin-bottom:8px;">
+            <select class="mini-input" id="mf-catatanTemplate" style="max-width:100%;margin-bottom:8px;">
               <option value="">- pilih template -</option>
               <option value="Matikan dan lepaskan sumber listrik setelah penggunaan.">Matikan &amp; lepaskan sumber listrik setelah penggunaan</option>
               <option value="Bersihkan sisa cairan setelah penggunaan.">Bersihkan sisa cairan setelah penggunaan</option>
               <option value="Jangan digunakan apabila terdapat kerusakan/abnormalitas.">Jangan digunakan apabila terdapat kerusakan/abnormalitas</option>
             </select>
-            <textarea id="mf-catatanAlat" placeholder="Pilih template di atas lalu edit sesuai kebutuhan, atau ketik manual"></textarea>
+            <textarea id="mf-catatan" placeholder="Pilih template di atas lalu edit sesuai kebutuhan, atau ketik manual"></textarea>
+          </div>
+
+          <div class="field" id="mf-garansi-wrap" style="max-width:220px; display:none;">
+            <label>Garansi (Hari)</label>
+            <input type="text" id="mf-garansi" placeholder="cth. 30">
           </div>
 
           <h2 class="section-title">Tanda Tangan</h2>
@@ -976,7 +976,7 @@
     const year = d.getFullYear();
     let count = 1;
     try{
-      const res = await fetch(SCRIPT_URL+'?action=list');
+      const res = await fetch(SCRIPT_URL+'?action=list&sheet='+encodeURIComponent('Tanda Terima'));
       const json = await res.json();
       if(json && json.records){
         count = json.records.filter(r => String(r.tanggal||'').slice(0,4) === String(year)).length + 1;
@@ -995,7 +995,7 @@
     const d = new Date(dateVal+'T00:00:00');
     const year = d.getFullYear();
     const jenis = document.querySelector('input[name="mf-jenis"]:checked').value;
-    const prefix = jenis === 'Service Report' ? 'SRP' : 'INS';
+    const prefix = jenis === 'Service Report' ? 'SRV' : 'INS';
     let count = 1;
     try{
       const res = await fetch(SCRIPT_URL+'?action=list&sheet=Inspeksi');
@@ -1024,10 +1024,16 @@
   });
   syncJenisUI();
 
-  /* ---------- template Catatan Alat (tetap bisa diedit bebas setelah dipilih) ---------- */
-  document.getElementById('mf-catatanAlatTemplate').addEventListener('change', (e)=>{
-    if(e.target.value) document.getElementById('mf-catatanAlat').value = e.target.value;
+  /* ---------- template Catatan (tetap bisa diedit bebas setelah dipilih) ---------- */
+  document.getElementById('mf-catatanTemplate').addEventListener('change', (e)=>{
+    if(e.target.value) document.getElementById('mf-catatan').value = e.target.value;
     e.target.selectedIndex = 0; // dropdown cuma pemicu, bukan penyimpan state
+  });
+
+  /* ---------- template Keterangan (Tanda Terima) ---------- */
+  document.getElementById('f-keteranganTemplate').addEventListener('change', (e)=>{
+    if(e.target.value) document.getElementById('f-keterangan').value = e.target.value;
+    e.target.selectedIndex = 0;
   });
   document.getElementById('f-tanggal').valueAsDate = new Date();
   refreshSerial();
@@ -1061,7 +1067,7 @@
     try{ doc.addImage(LOGO_RUANGLAB_DATA, 'PNG', marginX, y, logoW, logoH); }catch(e){}
     doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(90,90,90);
     doc.text('Maguwoharjo, Sleman, Yogyakarta', marginX, y+logoH+4);
-    doc.text('Phone. 0857-4366-1020 | https://ruanglab.com', marginX, y+logoH+8);
+    doc.text('Phone. 0857-4366-1020 | http://www.ruanglab.com/', marginX, y+logoH+8);
 
     const rmnW = 20, rmnH = rmnW * (414/603);
     try{ doc.addImage(LOGO_RMN_DATA, 'PNG', pageW-marginX-rmnW, y, rmnW, rmnH); }catch(e){}
@@ -1251,7 +1257,7 @@
     document.getElementById('btnSubmit').textContent = 'Menyimpan…';
     try{
       const id = isEdit ? editingIdSerah : ('sub_'+Date.now());
-      const record = Object.assign({action: isEdit ? 'update' : 'create', id}, d);
+      const record = Object.assign({action: isEdit ? 'update' : 'create', sheet:'Tanda Terima', id}, d);
       const res = await fetch(SCRIPT_URL, {
         method: 'POST',
         headers: {'Content-Type': 'text/plain;charset=utf-8'}, // avoids CORS preflight on Apps Script
@@ -1320,7 +1326,7 @@
     const countEl = document.getElementById('ledgerCount');
     wrap.innerHTML = '<div class="empty-state">Memuat riwayat…</div>';
     try{
-      const res = await fetch(SCRIPT_URL+'?action=list');
+      const res = await fetch(SCRIPT_URL+'?action=list&sheet='+encodeURIComponent('Tanda Terima'));
       const json = await res.json();
       if(json.error) throw new Error(json.error);
       const records = json.records || [];
@@ -1382,7 +1388,7 @@
             await fetch(SCRIPT_URL, {
               method:'POST',
               headers:{'Content-Type':'text/plain;charset=utf-8'},
-              body: JSON.stringify({action:'delete', id: btn.dataset.id})
+              body: JSON.stringify({action:'delete', sheet:'Tanda Terima', id: btn.dataset.id})
             });
             loadLedger();
           }catch(e){ alert('Gagal menghapus: '+e.message); }
@@ -1543,7 +1549,6 @@
       sopBerlaku: document.getElementById('mf-sopBerlaku').value,
       sopKet: document.getElementById('mf-sopKet').value.trim(),
       catatan: document.getElementById('mf-catatan').value.trim(),
-      catatanAlat: document.getElementById('mf-catatanAlat').value.trim(),
       garansi: document.getElementById('mf-garansi').value.trim(),
       petugasNama: document.getElementById('mf-petugasNama').value.trim(),
       penggunaNama: document.getElementById('mf-penggunaNama').value.trim(),
@@ -1600,7 +1605,7 @@
     try{ doc.addImage(LOGO_RUANGLAB_DATA, 'PNG', marginX, y, logoW, logoH); }catch(e){}
     doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(90,90,90);
     doc.text('Maguwoharjo, Sleman, Yogyakarta', marginX, y+logoH+3.5);
-    doc.text('Phone. 0857-4366-1020 | https://ruanglab.com', marginX, y+logoH+7);
+    doc.text('Phone. 0857-4366-1020 | http://www.ruanglab.com/', marginX, y+logoH+7);
     const rmnW = 15, rmnH = rmnW * (414/603);
     try{ doc.addImage(LOGO_RMN_DATA, 'PNG', pageW-marginX-rmnW, y, rmnW, rmnH); }catch(e){}
     return y + logoH + 11;
@@ -1708,9 +1713,6 @@
     infoRow('LOKASI', d.lokasi, 'NO. SERI', d.noSeri);
     const tglFmt = d.tanggal ? d.tanggal.split('-').reverse().join('-') : '-';
     infoRow('NO. INVENTARIS', d.noInventaris, 'TANGGAL', tglFmt);
-    if(d.jenis === 'Service Report'){
-      infoRow('GARANSI', (d.garansi ? d.garansi+' Hari' : '-'), '', '');
-    }
 
     y += 5;
     y = sectionHeaderM(doc, 'KONDISI LINGKUNGAN', marginX, y, contentW);
@@ -1800,16 +1802,17 @@
     doc.text(catatanLines, marginX+2, y+catatanLineH*1.2, {lineHeightFactor: PDF_LHF});
     y += catatanH;
 
-    y += 5;
-    y = ensureSpaceM(doc, y, 18, pageW);
-    y = sectionHeaderM(doc, 'CATATAN ALAT', marginX, y, contentW);
-    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(20,20,20);
-    const catatanAlatLineH = pdfLineH(doc, 9);
-    const catatanAlatLines = doc.splitTextToSize(safeTxt(d.catatanAlat), contentW-4);
-    const catatanAlatH = Math.max(10, catatanAlatLineH*1.2 + catatanAlatLines.length*catatanAlatLineH);
-    doc.rect(marginX, y, contentW, catatanAlatH);
-    doc.text(catatanAlatLines, marginX+2, y+catatanAlatLineH*1.2, {lineHeightFactor: PDF_LHF});
-    y += catatanAlatH;
+    if(d.jenis === 'Service Report'){
+      y += 5;
+      y = ensureSpaceM(doc, y, 12, pageW);
+      doc.setDrawColor(180,175,160); doc.setLineWidth(.2);
+      doc.rect(marginX, y, contentW, 9);
+      doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(90,90,90);
+      doc.text('GARANSI', marginX+2, y+5.8);
+      doc.setFont('helvetica','normal'); doc.setFontSize(9.3); doc.setTextColor(20,20,20);
+      doc.text(d.garansi ? d.garansi+' Hari' : '-', marginX+30, y+5.8);
+      y += 9;
+    }
 
     y += 10;
     y = ensureSpaceM(doc, y, 34, pageW);
@@ -1897,7 +1900,6 @@
     document.getElementById('mf-sopBerlaku').value = d.sopBerlaku || '';
     document.getElementById('mf-sopKet').value = d.sopKet || '';
     document.getElementById('mf-catatan').value = d.catatan || '';
-    document.getElementById('mf-catatanAlat').value = d.catatanAlat || '';
     document.getElementById('mf-petugasNama').value = d.petugasNama || '';
     document.getElementById('mf-penggunaNama').value = d.penggunaNama || '';
 
@@ -1969,6 +1971,11 @@
       if(!el.closest('#pemeriksaan-body') && !el.closest('#maintenance-body') && !el.closest('#media-rows')) el.value='';
     });
     document.querySelectorAll('#fields-maintenance select').forEach(el=>{ el.selectedIndex=0; });
+    document.getElementById('mf-namaRuang').value = 'Lab Teknisi';
+    document.getElementById('mf-temperature').value = '26';
+    document.getElementById('mf-kelembaban').value = '55';
+    document.getElementById('mf-powerPhase').value = '1';
+    document.getElementById('mf-tegangan').value = '220';
     document.getElementById('mf-jenis-inspeksi').checked = true;
     document.getElementById('mf-jenis-service').checked = false;
     syncJenisUI();
