@@ -220,16 +220,6 @@
     color:var(--teal);padding:0;
   }
   .row-actions button.del{color:var(--danger);}
-  /* kolom Aksi dibuat sticky di sisi kanan supaya Edit/Hapus/Unduh selalu
-     terjangkau tanpa perlu scroll horizontal saat tabel riwayat lebar
-     (jumlah kolom banyak, mis. tabel Inspeksi/Service Report) */
-  table.ledger th.col-actions, table.ledger td.row-actions{
-    position:sticky; right:0; z-index:1;
-    box-shadow:-6px 0 6px -6px rgba(0,0,0,0.18);
-  }
-  table.ledger th.col-actions{background:var(--marine);}
-  table.ledger td.row-actions{background:#fff;}
-  table.ledger tr:nth-child(even) td.row-actions{background:#FAF8F2;}
   .empty-state{
     text-align:center;padding:40px 20px;color:var(--slate);font-size:13.5px;
     border:1px dashed var(--line);border-radius:8px;background:#fff;
@@ -614,6 +604,7 @@
           </div>
           <div class="status-msg" id="statusMsgM"></div>
         </div><!-- /fields-maintenance -->
+
       </div>
     </div>
   </div>
@@ -641,7 +632,7 @@
         </div>
       </div>
       <div id="ledgerWrapM" class="ledger-scroll"><div class="empty-state">Memuat riwayat…</div></div>
-      <p class="shared-note">Data pada riwayat ini disimpan langsung ke Google Sheets kamu (sheet "Inspeksi") — bisa dibuka & diedit juga langsung dari Sheets kapan saja.</p>
+      <p class="shared-note">Data pada riwayat ini disimpan langsung ke Google Sheets kamu (sheet "Maintenance") — bisa dibuka & diedit juga langsung dari Sheets kapan saja.</p>
     </div>
   </div>
 
@@ -709,12 +700,9 @@
 
   /* ---------- mode switch (Tanda Terima <-> Inspeksi) ---------- */
   let currentMode = 'serah';
-  const MODE_FIELDS = {serah:'fields-serah', maintenance:'fields-maintenance'};
-  const MODE_RIWAYAT = {serah:'riwayat-serah', maintenance:'riwayat-maintenance'};
 
   function loadCurrentRiwayat(){
-    if(currentMode === 'serah') loadLedger();
-    else loadMaintenanceLedger();
+    if(currentMode === 'serah') loadLedger(); else loadMaintenanceLedger();
   }
 
   function resizeMaintenanceSigs(){
@@ -729,10 +717,10 @@
       document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       currentMode = btn.dataset.mode;
-      Object.keys(MODE_FIELDS).forEach(m=>{
-        document.getElementById(MODE_FIELDS[m]).style.display = currentMode===m ? '' : 'none';
-        document.getElementById(MODE_RIWAYAT[m]).style.display = currentMode===m ? '' : 'none';
-      });
+      document.getElementById('fields-serah').style.display = currentMode==='serah' ? '' : 'none';
+      document.getElementById('fields-maintenance').style.display = currentMode==='maintenance' ? '' : 'none';
+      document.getElementById('riwayat-serah').style.display = currentMode==='serah' ? '' : 'none';
+      document.getElementById('riwayat-maintenance').style.display = currentMode==='maintenance' ? '' : 'none';
       const riwayatShown = document.getElementById('tab-riwayat').style.display !== 'none';
       if(riwayatShown) loadCurrentRiwayat();
       if(currentMode==='maintenance') resizeMaintenanceSigs();
@@ -1351,7 +1339,7 @@
       }
       let html = '<table class="ledger"><thead><tr>'+
         '<th>No.</th><th>Tanggal</th><th>Jenis</th><th>Dari</th><th>Kepada</th>'+
-        '<th>Berupa</th><th>Jumlah</th><th>Pemberi</th><th>Penerima</th><th class="col-actions">Aksi</th>'+
+        '<th>Berupa</th><th>Jumlah</th><th>Pemberi</th><th>Penerima</th><th>Aksi</th>'+
         '</tr></thead><tbody>';
       records.forEach(r=>{
         html += '<tr>'+
@@ -2023,7 +2011,7 @@
       }
       let html = '<table class="ledger"><thead><tr>'+
         '<th>Jenis</th><th>No. Dokumen</th><th>Tanggal</th><th>Nama Alat</th><th>Lokasi</th><th>No. Inventaris</th>'+
-        '<th>Petugas</th><th>Pengguna Alat</th><th class="col-actions">Aksi</th>'+
+        '<th>Petugas</th><th>Pengguna Alat</th><th>Aksi</th>'+
         '</tr></thead><tbody>';
       records.forEach(r=>{
         html += '<tr>'+
