@@ -220,6 +220,16 @@
     color:var(--teal);padding:0;
   }
   .row-actions button.del{color:var(--danger);}
+  /* kolom Aksi dibuat sticky di sisi kanan supaya Edit/Hapus/Unduh selalu
+     terjangkau tanpa perlu scroll horizontal saat tabel riwayat lebar
+     (jumlah kolom banyak, mis. tabel Inspeksi/Service Report) */
+  table.ledger th.col-actions, table.ledger td.row-actions{
+    position:sticky; right:0; z-index:1;
+    box-shadow:-6px 0 6px -6px rgba(0,0,0,0.18);
+  }
+  table.ledger th.col-actions{background:var(--marine);}
+  table.ledger td.row-actions{background:#fff;}
+  table.ledger tr:nth-child(even) td.row-actions{background:#FAF8F2;}
   .empty-state{
     text-align:center;padding:40px 20px;color:var(--slate);font-size:13.5px;
     border:1px dashed var(--line);border-radius:8px;background:#fff;
@@ -351,16 +361,15 @@
         </div>
 
         <h2 class="section-title">Detail Barang</h2>
-        <div class="row">
-          <div class="field">
-            <label>Berupa (nama alat) <span class="req">*</span></label>
-            <input type="text" id="f-berupa" placeholder="cth. Dispenseter Brand">
-          </div>
-          <div class="field">
-            <label>Sebanyak <span class="req">*</span></label>
-            <input type="text" id="f-jumlah" placeholder="cth. 1 set">
-          </div>
+        <div class="item-table-scroll">
+          <table class="item-table">
+            <thead><tr><th>No</th><th>Nama Barang</th><th>Jumlah</th><th>Keterangan</th><th></th></tr></thead>
+            <tbody id="barang-body"></tbody>
+          </table>
         </div>
+        <button class="link-btn" id="btnAddBarang" type="button">+ Tambah barang</button>
+        <p class="hint">Keterangan di sini untuk kondisi rusak/trouble per barang (opsional). Baris kosong akan diabaikan saat disimpan.</p>
+
         <div class="field">
           <label>Keterangan</label>
           <select class="mini-input" id="f-keteranganTemplate" style="max-width:100%;margin-bottom:8px;">
@@ -604,7 +613,6 @@
           </div>
           <div class="status-msg" id="statusMsgM"></div>
         </div><!-- /fields-maintenance -->
-
       </div>
     </div>
   </div>
@@ -632,7 +640,7 @@
         </div>
       </div>
       <div id="ledgerWrapM" class="ledger-scroll"><div class="empty-state">Memuat riwayat…</div></div>
-      <p class="shared-note">Data pada riwayat ini disimpan langsung ke Google Sheets kamu (sheet "Maintenance") — bisa dibuka & diedit juga langsung dari Sheets kapan saja.</p>
+      <p class="shared-note">Data pada riwayat ini disimpan langsung ke Google Sheets kamu (sheet "Inspeksi") — bisa dibuka & diedit juga langsung dari Sheets kapan saja.</p>
     </div>
   </div>
 
@@ -700,9 +708,12 @@
 
   /* ---------- mode switch (Tanda Terima <-> Inspeksi) ---------- */
   let currentMode = 'serah';
+  const MODE_FIELDS = {serah:'fields-serah', maintenance:'fields-maintenance'};
+  const MODE_RIWAYAT = {serah:'riwayat-serah', maintenance:'riwayat-maintenance'};
 
   function loadCurrentRiwayat(){
-    if(currentMode === 'serah') loadLedger(); else loadMaintenanceLedger();
+    if(currentMode === 'serah') loadLedger();
+    else loadMaintenanceLedger();
   }
 
   function resizeMaintenanceSigs(){
@@ -717,10 +728,10 @@
       document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       currentMode = btn.dataset.mode;
-      document.getElementById('fields-serah').style.display = currentMode==='serah' ? '' : 'none';
-      document.getElementById('fields-maintenance').style.display = currentMode==='maintenance' ? '' : 'none';
-      document.getElementById('riwayat-serah').style.display = currentMode==='serah' ? '' : 'none';
-      document.getElementById('riwayat-maintenance').style.display = currentMode==='maintenance' ? '' : 'none';
+      Object.keys(MODE_FIELDS).forEach(m=>{
+        document.getElementById(MODE_FIELDS[m]).style.display = currentMode===m ? '' : 'none';
+        document.getElementById(MODE_RIWAYAT[m]).style.display = currentMode===m ? '' : 'none';
+      });
       const riwayatShown = document.getElementById('tab-riwayat').style.display !== 'none';
       if(riwayatShown) loadCurrentRiwayat();
       if(currentMode==='maintenance') resizeMaintenanceSigs();
@@ -806,6 +817,30 @@
   const sigPenerima = document.getElementById('sig-penerima');
   setupSig(sigPemberi);
   setupSig(sigPenerima);
+
+  /* ---------- tabel dinamis Detail Barang (Tanda Terima) ---------- */
+  let bRowSeq = 0;
+  function addBarangRow(namaVal, jumlahVal, ketVal){
+    const tbody = document.getElementById('barang-body');
+    bRowSeq++;
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="item-no"></td>'+
+      '<td><input type="text" class="mini-input b-nama" placeholder="cth. Dispenser Brand" value="'+escAttr(namaVal)+'"></td>'+
+      '<td><input type="text" class="mini-input b-jumlah" placeholder="cth. 1 set" value="'+escAttr(jumlahVal)+'"></td>'+
+      '<td><input type="text" class="mini-input b-ket" placeholder="Keterangan (opsional)" value="'+escAttr(ketVal)+'"></td>'+
+      '<td class="item-radio aksi-col"><button class="del-row-mini" type="button" title="Hapus baris">&times;</button></td>';
+    tr.querySelector('.del-row-mini').addEventListener('click', ()=>{ tr.remove(); renumberRows('barang-body'); });
+    tbody.appendChild(tr);
+    renumberRows('barang-body');
+  }
+  document.getElementById('btnAddBarang').addEventListener('click', ()=> addBarangRow());
+  function resetBarangTable(){
+    document.getElementById('barang-body').innerHTML = '';
+    addBarangRow();
+    addBarangRow();
+  }
+  resetBarangTable();
 
   document.querySelectorAll('[data-clear]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1112,16 +1147,13 @@
       y += rowH;
     }
 
-    // row: berupa / sebanyak
+    // tabel: detail barang
     {
-      const mL = measureLabelVal(colSplit-marginX, d.berupa);
-      const mR = measureLabelVal(marginX+contentW-colSplit, d.jumlah);
-      const rowH = Math.max(mL.neededH, mR.neededH);
-      doc.rect(marginX, y, contentW, rowH);
-      doc.line(colSplit, y, colSplit, y+rowH);
-      drawLabelVal(marginX, 'BERUPA :', mL.lines);
-      drawLabelVal(colSplit, 'SEBANYAK :', mR.lines);
-      y += rowH;
+      const barangList = parseMaybeJson(d.barang) || [];
+      const rows = barangList.length
+        ? barangList.map((b,i)=> [i+1, b.nama, b.jumlah, b.ket])
+        : [['-','-','-','-']];
+      y = drawTableM(doc, marginX, y, [12,70,30,68], ['No','Nama Barang','Jumlah','Keterangan'], rows, {centerCols:[0]});
     }
 
     // row: keterangan
@@ -1187,13 +1219,19 @@
 
   /* ---------- validation & submit ---------- */
   function getFormData(){
+    const barang = [];
+    document.querySelectorAll('#barang-body tr').forEach((tr,i)=>{
+      const nama = tr.querySelector('.b-nama').value.trim();
+      const jumlah = tr.querySelector('.b-jumlah').value.trim();
+      const ket = tr.querySelector('.b-ket').value.trim();
+      if(nama || jumlah || ket) barang.push({ no:i+1, nama, jumlah, ket });
+    });
     const d = {
       noSurat: document.getElementById('f-noSurat').value.trim(),
       jenis: document.getElementById('f-jenis').value,
       dari: document.getElementById('f-dari').value.trim(),
       kepada: document.getElementById('f-kepada').value.trim(),
-      berupa: document.getElementById('f-berupa').value.trim(),
-      jumlah: document.getElementById('f-jumlah').value.trim(),
+      barang: JSON.stringify(barang),
       keterangan: document.getElementById('f-keterangan').value.trim(),
       tanggal: document.getElementById('f-tanggal').value,
       pemberiNama: document.getElementById('f-pemberiNama').value.trim(),
@@ -1210,8 +1248,8 @@
   function validate(d){
     if(!d.dari) return 'Kolom "Telah diterima dari" wajib diisi.';
     if(!d.kepada) return 'Kolom "Kepada" wajib diisi.';
-    if(!d.berupa) return 'Kolom "Berupa" wajib diisi.';
-    if(!d.jumlah) return 'Kolom "Sebanyak" wajib diisi.';
+    const barangIsi = JSON.parse(d.barang || '[]').some(b=>b.nama || b.jumlah);
+    if(!barangIsi) return 'Minimal isi satu baris barang (Nama Barang / Jumlah).';
     if(!d.tanggal) return 'Tanggal wajib diisi.';
     return null;
   }
@@ -1226,12 +1264,17 @@
     document.getElementById('f-jenis').value = d.jenis || 'masuk';
     document.getElementById('f-dari').value = d.dari || '';
     document.getElementById('f-kepada').value = d.kepada || '';
-    document.getElementById('f-berupa').value = d.berupa || '';
-    document.getElementById('f-jumlah').value = d.jumlah || '';
     document.getElementById('f-keterangan').value = d.keterangan || '';
     if(d.tanggal) document.getElementById('f-tanggal').value = d.tanggal;
     document.getElementById('f-pemberiNama').value = d.pemberiNama || '';
     document.getElementById('f-penerimaNama').value = d.penerimaNama || '';
+    document.getElementById('barang-body').innerHTML = '';
+    const barangList = parseMaybeJson(d.barang) || [];
+    if(barangList.length){
+      barangList.forEach(b=> addBarangRow(b.nama, b.jumlah, b.ket));
+    }else{
+      addBarangRow(); addBarangRow();
+    }
     fotoList.length = 0;
     for(let i=1;i<=MAX_FOTO;i++){
       if(d['foto'+i]) fotoList.push(d['foto'+i]);
@@ -1298,9 +1341,10 @@
   });
 
   document.getElementById('btnReset').addEventListener('click', ()=>{
-    ['f-dari','f-kepada','f-berupa','f-jumlah','f-keterangan','f-pemberiNama','f-penerimaNama'].forEach(id=>{
+    ['f-dari','f-kepada','f-keterangan','f-pemberiNama','f-penerimaNama'].forEach(id=>{
       document.getElementById(id).value = '';
     });
+    resetBarangTable();
     [sigPemberi, sigPenerima].forEach(c=>c.getContext('2d').clearRect(0,0,c.width,c.height));
     fotoList.length = 0;
     renderFotoList();
@@ -1339,7 +1383,7 @@
       }
       let html = '<table class="ledger"><thead><tr>'+
         '<th>No.</th><th>Tanggal</th><th>Jenis</th><th>Dari</th><th>Kepada</th>'+
-        '<th>Berupa</th><th>Jumlah</th><th>Pemberi</th><th>Penerima</th><th>Aksi</th>'+
+        '<th>Barang</th><th>Pemberi</th><th>Penerima</th><th class="col-actions">Aksi</th>'+
         '</tr></thead><tbody>';
       records.forEach(r=>{
         html += '<tr>'+
@@ -1348,8 +1392,7 @@
           '<td>'+(r.jenis==='keluar'?'Keluar':'Masuk')+'</td>'+
           '<td>'+(r.dari||'-')+'</td>'+
           '<td>'+(r.kepada||'-')+'</td>'+
-          '<td>'+(r.berupa||'-')+'</td>'+
-          '<td>'+(r.jumlah||'-')+'</td>'+
+          '<td>'+summarizeBarang(r.barang)+'</td>'+
           '<td>'+(r.pemberiNama||'-')+'</td>'+
           '<td>'+(r.penerimaNama||'-')+'</td>'+
           '<td class="row-actions">'+
@@ -1404,11 +1447,16 @@
 
   document.getElementById('btnExportCsv').addEventListener('click', ()=>{
     if(cachedRecords.length === 0){ alert('Belum ada data untuk diekspor.'); return; }
-    const cols = ['noSurat','tanggal','jenis','dari','kepada','berupa','jumlah','keterangan','pemberiNama','penerimaNama','createdAt'];
-    const header = ['No Surat','Tanggal','Jenis','Dari','Kepada','Berupa','Jumlah','Keterangan','Pemberi','Penerima','Dibuat Pada'];
+    const cols = ['noSurat','tanggal','jenis','dari','kepada','barangCsv','keterangan','pemberiNama','penerimaNama','createdAt'];
+    const header = ['No Surat','Tanggal','Jenis','Dari','Kepada','Barang','Keterangan','Pemberi','Penerima','Dibuat Pada'];
     let csv = header.map(csvEscape).join(',') + '\n';
     cachedRecords.forEach(r=>{
-      csv += cols.map(c=>csvEscape(r[c])).join(',') + '\n';
+      const barangCsv = parseMaybeJson(r.barang).map(b=>{
+        let s = (b.nama||'-') + (b.jumlah ? ' ('+b.jumlah+')' : '');
+        if(b.ket) s += ' ['+b.ket+']';
+        return s;
+      }).join('; ');
+      csv += cols.map(c=> c==='barangCsv' ? csvEscape(barangCsv) : csvEscape(r[c])).join(',') + '\n';
     });
     const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
     const url = URL.createObjectURL(blob);
@@ -1564,6 +1612,13 @@
   function parseMaybeJson(v){
     if(Array.isArray(v)) return v;
     try{ return JSON.parse(v || '[]'); }catch(e){ return []; }
+  }
+
+  function summarizeBarang(barangRaw){
+    const list = parseMaybeJson(barangRaw);
+    if(!list.length) return '-';
+    const first = list[0].nama || '-';
+    return list.length > 1 ? (first+' — dan '+(list.length-1)+' lainnya') : first;
   }
 
   function validateMaintenanceForm(d){
@@ -2011,7 +2066,7 @@
       }
       let html = '<table class="ledger"><thead><tr>'+
         '<th>Jenis</th><th>No. Dokumen</th><th>Tanggal</th><th>Nama Alat</th><th>Lokasi</th><th>No. Inventaris</th>'+
-        '<th>Petugas</th><th>Pengguna Alat</th><th>Aksi</th>'+
+        '<th>Petugas</th><th>Pengguna Alat</th><th class="col-actions">Aksi</th>'+
         '</tr></thead><tbody>';
       records.forEach(r=>{
         html += '<tr>'+
@@ -2124,7 +2179,8 @@
       const raw = localStorage.getItem(DRAFT_KEY_SERAH);
       if(!raw) return;
       const d = JSON.parse(raw);
-      const hasContent = d.dari || d.kepada || d.berupa || d.jumlah || d.keterangan;
+      const barangAda = d.barang && JSON.parse(d.barang || '[]').some(b=>b.nama || b.jumlah);
+      const hasContent = d.dari || d.kepada || barangAda || d.keterangan;
       if(!hasContent) return;
       if(confirm('Ditemukan draft formulir "Tanda Terima" yang belum tersimpan. Lanjutkan mengisi draft ini?')){
         populateFormSerahFields(d);
